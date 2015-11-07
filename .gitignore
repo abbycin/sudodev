@@ -1,0 +1,5 @@
+*.o
+*.out
+*.swp
+sdev_ctl
+sdevd
