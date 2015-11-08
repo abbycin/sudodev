@@ -13,7 +13,6 @@
 #include <map>
 #include <string>
 
-extern const char *SDEV_CONF_PATH;
 extern bool plugin_devs_ok;
 extern bool exit_flag;
 extern std::map<int, std::string> plugin_dev;
@@ -109,7 +108,8 @@ int main(int argc, char *argv[])
 
         cout << "Scaning available devices..." << endl;
 
-        while(!plugin_devs_ok)
+        int countdown = 2;
+        while(!plugin_devs_ok && countdown)
         {
                 if(get_plugin_dev() == -1)
                 {
@@ -118,12 +118,6 @@ int main(int argc, char *argv[])
                 }
 
                 plugin_devs_ok = plugin_dev.empty() ? false : true;
-        }
-
-        int countdown = 5;
-        while(!plugin_devs_ok && countdown)
-        {
-                sleep(1);
                 countdown -= 1;
         }
 

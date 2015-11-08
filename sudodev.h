@@ -17,6 +17,17 @@
 #ifndef SUDO_DEV_H_
 #define SUDO_DEV_H_
 
+
+#define LOG_PATH        "/var/log/sdevd.log"
+#define PID_PATH        "/var/run/sdev.pid"
+#define FSTAB_PATH      "/etc/fstab"
+#define SUDOERS_PATH    "/etc/sudoers"
+#define SUDO_CONF_PATH  "/etc/sudoers.d/sdev"
+#define GROUP_PATH      "/etc/group"
+#define SDEV_CONF_PATH  "/etc/sdev.conf"
+#define SDEV_GROUP_NAME "sdevuser"
+#define INTERFACE_PATH  "/dev/disk/by-uuid"
+
 /*
  * no matter fstab is pure `/dev/xx` format or pure `UUID=xx`
  * format or even both, we convert them into `/dev/xx` format

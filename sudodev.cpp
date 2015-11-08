@@ -37,28 +37,17 @@ using std::cerr;
  */
 std::ofstream logs;
 
-
 /*
  * global varibales for program config
  */
-const char *PID_PATH = "/var/run/sdev.pid";
-const char *FSTAB_PATH = "/etc/fstab";
-const char *SUDOERS_PATH = "/etc/sudoers";
-const char *SUDO_CONF_PATH = "/etc/sudoers.d/sdev";
-const char *GROUP_PATH = "/etc/group";
-const char *SDEV_CONF_PATH = "/etc/sdev.conf";	// program configuration file path
-const char *SDEV_GROUP_NAME = "sdevuser";
-const char *INTERFACE_PATH = "/dev/disk/by-uuid";
-const char *LOG_PATH = "/var/log/sdevd.log";
-
 std::string DROP_IN = "#includedir /etc/sudoers.d";
-const char *PRIVILAGE = "%sdevuser ALL=(ALL) NOPASSWD: ALL";
+std::string PRIVILAGE = "%sdevuser ALL=(ALL) NOPASSWD: ALL";
 
 /*
  * global variables for devices discovering
  */
-std::vector<std::pair<std::string, bool>> local_dev;
-std::vector<std::pair<std::string, std::string>> all_dev;  // <partitiron, uuid>
+std::vector<std::string> local_dev;
+std::vector<std::pair<std::string, std::string>> all_dev;  // <partition, uuid>
 std::map<int, std::string> plugin_dev;
 std::map<int, std::string> plugin_dev_uuid;
 
@@ -121,32 +110,27 @@ int get_local_dev()
 
 			ss.str(line);
 			ss >> key;
+
+                        memset(buf, 0, sizeof(buf));
+
                         if(key.find("UUID") != key.npos)
                         {
                                 line = key.substr(strlen("UUID") + 1);
-			        local_dev.push_back(std::make_pair(line, true));
+                                path = INTERFACE_PATH;
+                                path += "/" + line;
+                                readlink(path.c_str(), buf, sizeof(buf));
                         }
                         else
-			        local_dev.push_back(std::make_pair(key, false));
-			ss.clear();
+                                memcpy(buf, key.c_str(), key.length());
+
+			local_dev.push_back(std::string(basename(buf)));
+                        ss.clear();
 		}
 	}
 	else
 		return -1;
 	
         in.close();
-
-        for(auto iter = local_dev.begin(); iter != local_dev.end(); ++iter)
-        {
-                if(iter->second)
-                {
-                        path = INTERFACE_PATH;
-                        path += "/" + iter->first;
-                        readlink(path.c_str(), buf, sizeof(buf));
-                        iter->first = std::string(basename(buf));
-                        memset(buf, 0, sizeof(buf));
-                }
-        }
 
 	return 0;
 }
@@ -216,7 +200,7 @@ int get_plugin_dev()
                 all_dev.erase(std::remove_if(all_dev.begin(), all_dev.end(),
                         [local](std::pair<std::string, std::string> x)
                         {
-                                return (local.first.substr(0,3) == x.first.substr(0,3));
+                                return (local.substr(0,3) == x.first.substr(0,3));
                         }), all_dev.end());
         }
 

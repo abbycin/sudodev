@@ -1,13 +1,17 @@
-CXX=clang++ -std=c++11 -Wall -g
+CXX=clang++ -std=c++11 -Wall
+ctrl = sdev_ctl
+daemon = sdevd
 
-all: sdev_ctl sdevd
+all: $(ctrl) $(daemon)
 
 
-sdev_ctl: sdev_ctl.o sudodev.o
-	$(CXX) $^ -o $@ -lpthread
+$(ctrl): sdev_ctl.o sudodev.o
+	$(CXX) $^ -o $@
+	strip $@
 
-sdevd: sudodev.o sdevd.o
-	$(CXX) $^ -o $@ -lpthread
+$(daemon): sudodev.o sdevd.o
+	$(CXX) $^ -o $@
+	strip $@
 
 install:
 	@sudo install sdev_ctl /bin

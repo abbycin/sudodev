@@ -17,8 +17,6 @@
 using std::cerr;
 using std::endl;
 
-extern const char *PID_PATH;
-extern const char *LOG_PATH;
 extern std::ofstream logs;
 extern bool exit_flag;
 extern std::string qualified_dev;
