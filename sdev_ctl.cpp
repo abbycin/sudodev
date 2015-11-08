@@ -111,13 +111,11 @@ int main(int argc, char *argv[])
 
         while(!plugin_devs_ok)
         {
-                if(get_local_dev() ==  -1 || get_all_dev() == -1)
+                if(get_plugin_dev() == -1)
                 {
-                        cerr << "Can't get local devices list, exit...";
+                        cerr << "Can't get local devices list, exit...\n";
                         exit(1);
                 }
-                
-                get_plugin_dev();
 
                 plugin_devs_ok = plugin_dev.empty() ? false : true;
         }

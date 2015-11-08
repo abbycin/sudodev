@@ -33,7 +33,7 @@ int get_all_dev();
  * compare local devices in fstab and devices under /dev/disk/by-uuid
  * to find out non-local devices
  */ 
-void get_plugin_dev();
+int get_plugin_dev();
 
 /*
  * list all available plugin in devices

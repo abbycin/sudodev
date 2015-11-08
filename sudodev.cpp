@@ -163,18 +163,27 @@ int get_all_dev()
 	DIR *pdir = NULL;
 	struct dirent *dp = NULL;
         std::string path, key, val;
-	
+        struct stat st;
+
 	pdir = opendir(INTERFACE_PATH);
 	
 	if(pdir == NULL)
 		return -1;
 
+        chdir(INTERFACE_PATH);
 	while((dp = readdir(pdir)))
 	{
                 if(dp->d_name[0] == '.')
                         continue;
                 
-                if(dp->d_type & DT_BLK)
+                memset(&st, 0, sizeof(st));
+                if(lstat(dp->d_name, &st) == -1)
+                {
+                        perror("Error");
+                        exit(1);
+                }
+
+                if(S_ISLNK(st.st_mode))
                 {
                         val = dp->d_name;
                         path = INTERFACE_PATH;
@@ -188,7 +197,8 @@ int get_all_dev()
 	}
 	
 	closedir(pdir);
-	
+        chdir("/");
+
 	return 0;
 }
 
@@ -196,8 +206,11 @@ int get_all_dev()
  * compare local devices in fstab and devices under /dev/disk/by-uuid
  * to find out non-local devices
  */ 
-void get_plugin_dev()
+int get_plugin_dev()
 {
+        if(get_local_dev() == -1 || get_all_dev() == -1)
+                return -1;
+
         for(const auto &local: local_dev)
         {
                 all_dev.erase(std::remove_if(all_dev.begin(), all_dev.end(),
@@ -217,6 +230,8 @@ void get_plugin_dev()
                 plugin_dev_uuid[idx] = x.second;
                 idx += 1;
 	}
+
+        return 0;
 }
 
 /*

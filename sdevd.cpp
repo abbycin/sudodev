@@ -21,9 +21,17 @@ extern const char *PID_PATH;
 extern const char *LOG_PATH;
 extern std::ofstream logs;
 extern bool exit_flag;
-extern bool plugin_devs_ok;
-extern std::map<int, std::string> plugin_dev;
 extern std::string qualified_dev;
+
+static void device_helper()
+{
+        if(get_plugin_dev() == -1)
+        {
+                exit_flag = true;
+                logs << "Can't get available devices,eixt...\n";
+        }
+        sleep(1);
+}
 
 int main()
 {
@@ -83,46 +91,19 @@ int main()
                 exit(1);
         }
 
-        int countdown = 0;
-
         while(!exit_flag)
         {
-                countdown = 2;
-                if(get_local_dev() == -1 || get_all_dev() == -1)
+                while(!is_qualified_device() && !exit_flag)
+                        device_helper();
+
+                if(!exit_flag)
                 {
-                        logs << "Can't get devices list, exit..." << endl;
-                        logs.close();
-                        exit(1);
+                        privilege(true);
+                        logs << qualified_dev << " granted privilege!\n";
                 }
-
-                get_plugin_dev();
-
-                plugin_devs_ok = plugin_dev.empty() ? false : true;
-
-                while(!plugin_devs_ok && countdown)
-                {
-                        countdown -= 1;
-                        sleep(1);
-                }
-
-                if(!countdown)
-                        continue;
-
-                while(!is_qualified_device() && countdown)
-                {
-                        countdown -= 1;
-                        sleep(1);
-                }
-                
-                if(!countdown)
-                        continue;
-
-                privilege(true);
-
-                logs << qualified_dev << " granted privilege!\n";
 
                 while(is_qualified_device() && !exit_flag)
-                        sleep(1);
+                        device_helper();
 
                 privilege(false);
 
