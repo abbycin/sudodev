@@ -174,7 +174,7 @@ int get_all_dev()
                 if(dp->d_name[0] == '.')
                         continue;
                 
-                if(dp->d_type && DT_BLK)
+                if(dp->d_type & DT_BLK)
                 {
                         val = dp->d_name;
                         path = INTERFACE_PATH;
