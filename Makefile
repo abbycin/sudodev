@@ -1,4 +1,4 @@
-CXX=clang++ -std=c++11 -Wall
+CXX=clang++ -std=c++11 -Wall -g
 
 all: sdev_ctl sdevd
 

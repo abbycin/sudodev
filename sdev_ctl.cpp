@@ -107,15 +107,20 @@ int main(int argc, char *argv[])
         if(strcmp(argv[1], "add") != 0)
                 usage(argv[0]);
 
-        pthread_t tid;
-
-        if(pthread_create(&tid, NULL, trigger, NULL))
-        {
-                cout << "Can't create thread, exit..." << endl;
-                exit(1);
-        }
-
         cout << "Scaning available devices..." << endl;
+
+        while(!plugin_devs_ok)
+        {
+                if(get_local_dev() ==  -1 || get_all_dev() == -1)
+                {
+                        cerr << "Can't get local devices list, exit...";
+                        exit(1);
+                }
+                
+                get_plugin_dev();
+
+                plugin_devs_ok = plugin_dev.empty() ? false : true;
+        }
 
         int countdown = 5;
         while(!plugin_devs_ok && countdown)
@@ -123,9 +128,6 @@ int main(int argc, char *argv[])
                 sleep(1);
                 countdown -= 1;
         }
-
-        exit_flag = true;
-        pthread_join(tid, 0);
 
         if(!countdown || !plugin_devs_ok)
         {

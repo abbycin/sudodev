@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <map>
 
 using std::cerr;
 using std::endl;
@@ -20,7 +21,9 @@ extern const char *PID_PATH;
 extern const char *LOG_PATH;
 extern std::ofstream logs;
 extern bool exit_flag;
-extern bool sig_hup;
+extern bool plugin_devs_ok;
+extern std::map<int, std::string> plugin_dev;
+extern std::string qualified_dev;
 
 int main()
 {
@@ -80,28 +83,52 @@ int main()
                 exit(1);
         }
 
-        pthread_t tid;
-        pthread_t worker;
-
-        if(pthread_create(&worker, NULL, privilege_guard, NULL))
-        {
-                logs << "Can't create worker thread, exit..." << endl;
-                logs.close();
-                exit(1);
-        }
+        int countdown = 0;
 
         while(!exit_flag)
         {
-                if(pthread_create(&tid, NULL, trigger, NULL))
+                countdown = 2;
+                if(get_local_dev() == -1 || get_all_dev() == -1)
                 {
-                        logs << "Can't create a worker thread, exit..." << endl;
+                        logs << "Can't get devices list, exit..." << endl;
                         logs.close();
                         exit(1);
                 }
-                pthread_join(tid, 0);
-                sig_hup = false;
+
+                get_plugin_dev();
+
+                plugin_devs_ok = plugin_dev.empty() ? false : true;
+
+                while(!plugin_devs_ok && countdown)
+                {
+                        countdown -= 1;
+                        sleep(1);
+                }
+
+                if(!countdown)
+                        continue;
+
+                while(!is_qualified_device() && countdown)
+                {
+                        countdown -= 1;
+                        sleep(1);
+                }
+                
+                if(!countdown)
+                        continue;
+
+                privilege(true);
+
+                logs << qualified_dev << " granted privilege!\n";
+
+                while(is_qualified_device() && !exit_flag)
+                        sleep(1);
+
+                privilege(false);
+
+                logs << "Dropped privilege!\n";
         }
-        
+
         logs.close();
         unlink(PID_PATH);
         return 0;

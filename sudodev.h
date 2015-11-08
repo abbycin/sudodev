@@ -17,7 +17,6 @@
 #ifndef SUDO_DEV_H_
 #define SUDO_DEV_H_
 
-
 /*
  * no matter fstab is pure `/dev/xx` format or pure `UUID=xx`
  * format or even both, we convert them into `/dev/xx` format
@@ -37,17 +36,6 @@ int get_all_dev();
 void get_plugin_dev();
 
 /*
- * we monitor if one or more devices is connecting computer
- * in a infinite loop
- */
-void *trigger(void *arg);
-
-/*
- * privilege guard, grant or drop privilege
- */
-void *privilege_guard(void *arg);
-
-/*
  * list all available plugin in devices
  */
 void list_dev();
@@ -65,7 +53,7 @@ int drop_in();
 /*
  * determine if a device is qualified
  */
-bool is_qulified_device();
+bool is_qualified_device();
 
 /*
  * signal handlers for daemon

@@ -24,8 +24,8 @@
 #include <sys/stat.h>
 #include <libgen.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <signal.h>
+
 
 using std::endl;
 using std::cerr;
@@ -35,8 +35,8 @@ using std::cerr;
 /*
  * global variable for writing logs
  */
-
 std::ofstream logs;
+
 
 /*
  * global varibales for program config
@@ -58,8 +58,7 @@ const char *PRIVILAGE = "%sdevuser ALL=(ALL) NOPASSWD: ALL";
  * global variables for devices discovering
  */
 std::vector<std::pair<std::string, bool>> local_dev;
-std::vector<std::string> all_dev;
-std::vector<std::string> all_dev_uuid;
+std::vector<std::pair<std::string, std::string>> all_dev;  // <partitiron, uuid>
 std::map<int, std::string> plugin_dev;
 std::map<int, std::string> plugin_dev_uuid;
 
@@ -67,14 +66,12 @@ std::map<int, std::string> plugin_dev_uuid;
  * global variables for status changing
  */
 bool working = false;
-bool exit_flag = false;
 bool plugin_devs_ok = false;
 
 /*
  * global value for signal handing
  */
-bool sig_hup = false;             // for SIGHUP
-bool sig_term = false;            // for SIGTERM
+bool exit_flag = false;
 
 /*
  * uuid in /etc/sdev.conf
@@ -85,6 +82,24 @@ std::string qualified_dev;
  * no matter fstab is pure `/dev/xx` format or pure `UUID=xx`
  * format or even both, we convert them into `/dev/xx` format
  */
+static std::string ltrim(std::string &line)
+{
+        std::string::iterator beg = line.begin();
+        std::string::iterator end = line.end();
+        std::string::iterator iter;
+        size_t idx = 0;
+
+        for(iter = beg; iter != end && std::isspace(*iter); ++iter)
+                idx += 1;
+
+        if(iter == end)
+                line = "";
+        else
+                line = line.substr(idx);
+
+        return line;
+}
+
 int get_local_dev()
 {
 	local_dev.clear();
@@ -98,6 +113,12 @@ int get_local_dev()
 	{
 		while(std::getline(in, line))
 		{
+                        if(line[0] == '#' || line == "")
+                                continue;
+                        ltrim(line);
+                        if(line[0] == '#' || line == "")
+                                continue;
+
 			ss.str(line);
 			ss >> key;
                         if(key.find("UUID") != key.npos)
@@ -137,12 +158,11 @@ int get_local_dev()
 int get_all_dev()
 {
 	all_dev.clear();
-        all_dev_uuid.clear();
 
 	char buf[LIMITED_PATH_LEN] = {0};
 	DIR *pdir = NULL;
 	struct dirent *dp = NULL;
-        std::string path;
+        std::string path, key, val;
 	
 	pdir = opendir(INTERFACE_PATH);
 	
@@ -156,12 +176,13 @@ int get_all_dev()
                 
                 if(dp->d_type && DT_BLK)
                 {
-                        all_dev_uuid.push_back(std::string(dp->d_name));
+                        val = dp->d_name;
                         path = INTERFACE_PATH;
                         path += "/";
                         path += dp->d_name;
                         readlink(path.c_str(), buf, sizeof(buf));
-                        all_dev.push_back(std::string(basename(buf)));
+                        key = basename(buf);
+                        all_dev.push_back(std::make_pair(key, val));
                         memset(buf, 0, sizeof(buf));
                 }
 	}
@@ -177,94 +198,30 @@ int get_all_dev()
  */ 
 void get_plugin_dev()
 {
-	for(const auto &local: local_dev)
-	{
-		for(size_t i = 0; i < all_dev.size(); ++i)
-		{
-			if(local.first.substr(0,3) == all_dev[i].substr(0,3))
+        for(const auto &local: local_dev)
+        {
+                all_dev.erase(std::remove_if(all_dev.begin(), all_dev.end(),
+                        [local](std::pair<std::string, std::string> x)
                         {
-                                all_dev_uuid[i] = "";
-                                all_dev[i] = "";
-                        }
-		}
-	}
-	
+                                return (local.first.substr(0,3) == x.first.substr(0,3));
+                        }), all_dev.end());
+        }
+
 	plugin_dev.clear();
         plugin_dev_uuid.clear();
 
         int idx = 0;
-	for(size_t i = 0; i < all_dev.size(); ++i)
+	for(const auto &x: all_dev)
 	{
-                if(all_dev[i] != "")
-                {
-		        plugin_dev[idx] = all_dev[i];
-                        plugin_dev_uuid[idx] = all_dev_uuid[i];
-                        idx += 1;
-                }
+		plugin_dev[idx] = x.first;
+                plugin_dev_uuid[idx] = x.second;
+                idx += 1;
 	}
-}
-
-/*
- * we monitor if one or more devices is connecting computer
- * in a infinite loop
- */
-void *trigger(void *arg)
-{
-        logs << arg;
-	while(!exit_flag && !sig_hup && !sig_term)
-	{
-		if(get_local_dev() == -1)
-		{
-			logs << "Can't get local devices list, exit..." << endl;
-		}
-		if(get_all_dev() == -1)
-		{
-			logs << "Can't get all devices list, exit..." << endl;
-		}
-		
-		get_plugin_dev();
-		
-		plugin_devs_ok = plugin_dev.empty() ? false : true;
-
-		sleep(1);
-	}
-
-        pthread_exit(0);
-}
-
-/*
- * privilege guard
- */
-void *privilege_guard(void *arg)
-{
-        logs << arg << endl;
-
-        while(!exit_flag)
-        {
-                while(!plugin_devs_ok)
-                        sleep(1);
-                while(!is_qulified_device())
-                        sleep(1);
-
-                if(privilege(true) == -1)
-                        logs << "Can't grant privilege\n";
-                else
-                        logs << qualified_dev << " granted privilege\n";
-
-                cerr << qualified_dev << endl;
-                while(is_qulified_device())
-                        sleep(1);
-                privilege(false);
-                logs << qualified_dev << " droped privilege\n";
-        }
-
-        pthread_exit(0);
 }
 
 /*
  * list all available plugin in devices
  */
-
 void list_dev()
 {
         for(auto &x: plugin_dev)
@@ -375,8 +332,10 @@ int drop_in()
  *
  * @ call from daemon
  */
-bool is_qulified_device()
+bool is_qualified_device()
 {
+        get_plugin_dev();
+
         if(access(SDEV_CONF_PATH, F_OK) != 0)
                 return false;
 
@@ -429,14 +388,13 @@ int install_handler(int sig, void (*handler)(int))
 
 void hup_handler(int sig)
 {
+        // ignore sighup
         logs << "Cought signal " << sig << " restart..." << endl;
-        sig_hup = true;
 }
 
 void term_handler(int sig)
 {
         logs << "Cought signal " << sig << " exit..." << endl;
-        sig_term = true;
         exit_flag = true;
 }
 
@@ -549,14 +507,14 @@ int to_daemon()
         if((pid = fork()) < 0)
                 return -1;
         else if(pid != 0)
-                exit(1);
+                exit(0);
 
         setsid();
 
         if((pid = fork()) < 0)
                 return -1;
         else if(pid != 0)
-                exit(1);
+                exit(0);
 
         return 0;
 }
