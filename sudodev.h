@@ -17,9 +17,11 @@
 #ifndef SUDO_DEV_H_
 #define SUDO_DEV_H_
 
+#include <string>
 
+#define LOG_SIZE_LIMIT  10485760        // 10MB
 #define LOG_PATH        "/var/log/sdevd.log"
-#define PID_PATH        "/var/run/sdev.pid"
+#define PID_PATH        "/var/run/sdevd.pid"
 #define FSTAB_PATH      "/etc/fstab"
 #define SUDOERS_PATH    "/etc/sudoers"
 #define SUDO_CONF_PATH  "/etc/sudoers.d/sdev"
@@ -88,11 +90,15 @@ bool is_locked();
 /*
  * record daemon's pid
  */
-int record_pid();
+int record_pid(std::string &);
 
 /*
  * make a dameon
  */
 int to_daemon();
 
+/*
+ * truncate log when its size exceed limit
+ */
+int log_truncate();
 #endif

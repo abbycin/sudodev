@@ -33,7 +33,6 @@ static void device_helper()
 
 int main()
 {
-        
         if(to_daemon() == -1)
         {
                 cerr << "Can't turn into daemon, exit..." << endl;
@@ -48,6 +47,13 @@ int main()
         }
 
         logs << std::unitbuf;
+
+        if(getuid())
+        {
+                logs << "Please run as root! exit..." << endl;
+                logs.close();
+                exit(1);
+        }
 
         if(access(PID_PATH, F_OK) == 0)
         {
@@ -74,8 +80,10 @@ int main()
                 exit(1);
         }
 
-        if(record_pid() == -1)
+        std::string msg;
+        if(record_pid(msg) == -1)
         {
+                logs << msg << endl;
                 logs.close();
                 exit(1);
         }
@@ -91,6 +99,8 @@ int main()
 
         while(!exit_flag)
         {
+                if(log_truncate() == -1)
+                        break;
                 while(!is_qualified_device() && !exit_flag)
                         device_helper();
 

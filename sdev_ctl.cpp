@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <map>
 #include <string>
@@ -88,6 +89,12 @@ int main(int argc, char *argv[])
         if(argc != 2)
                 usage(argv[0]);
 
+        if(getuid())
+        {
+                cerr << "Please run as \e[41mroot\e[0m\n";
+                exit(1);
+        }
+
         if(strcmp(argv[1], "del") == 0)
         {
                 if(del_dev() == -1)
@@ -142,6 +149,9 @@ int main(int argc, char *argv[])
         }
 
         of.close();
+
+        chmod(SDEV_CONF_PATH, S_IRUSR | S_IWUSR);
+        
         cout << "\e[35m" << chosen_dev << "\e[0m"
                 << " has been activated!" << endl;
 

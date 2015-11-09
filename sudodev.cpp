@@ -162,10 +162,7 @@ int get_all_dev()
                 
                 memset(&st, 0, sizeof(st));
                 if(lstat(dp->d_name, &st) == -1)
-                {
-                        perror("Error");
-                        exit(1);
-                }
+                        return -1;
 
                 if(S_ISLNK(st.st_mode))
                 {
@@ -223,7 +220,7 @@ int get_plugin_dev()
  */
 void list_dev()
 {
-        for(auto &x: plugin_dev)
+        for(const auto &x: plugin_dev)
         {
                 std::cout << "[" << x.first << "]" << ". "
                         << x.second << endl;
@@ -302,25 +299,36 @@ int drop_in()
 {
         std::fstream fd;
         std::string line;
+        bool drop_in = true;
+
+        struct stat st;
+
+        memset(&st, 0, sizeof(st));
+
+        stat(SUDOERS_PATH, &st);
+
+        chmod(SUDOERS_PATH, st.st_mode | S_IWUSR);
 
         fd.open(SUDOERS_PATH, fd.in | fd.out | fd.app);
-        if(fd.good())
-        {
-                while(std::getline(fd, line))
-                {
-                        if(line == DROP_IN)
-                        {
-                                fd.close();
-                                return 0;
-                        }
-                }
-
-                fd << DROP_IN << endl;
-        }
-        else
+        if(!fd.good())
                 return -1;
 
+        while(std::getline(fd, line))
+        {
+                if(line == DROP_IN)
+                {
+                        fd.close();
+                        drop_in = false;
+                        break;
+                }
+        }
+
+        if(drop_in)
+                fd << DROP_IN << endl;
+
         fd.close();
+
+        chmod(SUDOERS_PATH, st.st_mode & (~S_IWUSR));
 
         return 0;
 }
@@ -400,6 +408,7 @@ void term_handler(int sig)
 /*
  * manipulate privilege
  */
+
 int privilege(bool is_grant)
 {
         // no matter file exsit or not, remvoe it
@@ -427,6 +436,8 @@ int privilege(bool is_grant)
 
         of.close();
 
+        chmod(SUDO_CONF_PATH, S_IRUSR);
+
         return 0;
 }
 
@@ -434,11 +445,12 @@ int privilege(bool is_grant)
  * check if there's a daemon
  */
 
-int record_pid()
+int record_pid(std::string &msg)
 {
         struct flock flk;
         pid_t pid = getpid();
         int fd = 0;
+        char buf[10] = {0};
 
         memset(&flk, 0, sizeof(flk));
         flk.l_type = F_WRLCK;
@@ -447,26 +459,27 @@ int record_pid()
         fd = open(PID_PATH, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
         if(fd == -1)
         {
-                logs << "Failed to create pid file, exit..." << endl;
+                msg = "Failed to create pid file, exit...";
                 return -1;
         }
  
         if(fcntl(fd, F_SETLK, &flk) == -1)
         {
-                logs << "A daemon is running, eixt..." << endl;
+                msg = "A daemon is running, eixt...";
                 close(fd);
                 return -1;
         }
        
         if(ftruncate(fd, 0) == -1)
         {
-                logs << "Can't truncate file\n";
+                msg = "Can't truncate file";
                 return -1;
         }
 
-        if(write(fd, &pid, sizeof(pid_t)) == -1)
+        sprintf(buf, "%d", pid);
+        if(write(fd, buf, strlen(buf)) == -1)
         {
-                perror("Write");
+                msg = std::string(strerror(errno));
                 return -1;
         }
 
@@ -515,5 +528,20 @@ int to_daemon()
         else if(pid != 0)
                 exit(0);
 
+        return 0;
+}
+
+int log_truncate()
+{
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+
+        stat(LOG_PATH, &st);
+
+        if(st.st_size >= LOG_SIZE_LIMIT)
+        {
+                if(truncate(LOG_PATH, 0) == -1)
+                        return -1;
+        }
         return 0;
 }
