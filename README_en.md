@@ -1,7 +1,7 @@
 # Description
 [中文](./README.md)
 
-**sudodev:** A device(specificly USB Drive) let you use `sudo` without password
+**sudodev:** A device(USB Drive) let you use `sudo` without entering password
 
 After reading the code [here](https://github.com/Arondight/sudodev), I worte this program in C++, and I'm C++ beginner, so it's also a practice.
 
