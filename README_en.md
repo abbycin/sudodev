@@ -29,5 +29,5 @@ If above conditions are all satisfied, you can run `sdev_ctl` with `add` or `del
 
 # COPYRIGHT
 Copyright © 2015 AbbyCin(abbytsing@gmail.com)   
-# LISCENSE 
+# LICENSE 
 GNU General Public License [GPL](./LICENSE)

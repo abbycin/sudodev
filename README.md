@@ -30,5 +30,5 @@
 
 # COPYRIGHT
 Copyright © 2015 AbbyCin(abbytsing@gmail.com)   
-# LISCENSE 
+# LICENSE 
 GNU General Public License [GPL](./LICENSE)
