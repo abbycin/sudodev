@@ -66,16 +66,12 @@ int drop_in();
 /*
  * determine if a device is qualified
  */
-bool is_qualified_device();
+bool is_qualified_device(std::string &);
 
 /*
  * signal handlers for daemon
  */
 int install_handler(int , void (*handler)(int));
-
-void hup_handler(int);
-
-void term_handler(int);
 
 /*
  * manipulate privilege

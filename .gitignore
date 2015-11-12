@@ -1,5 +1,6 @@
 *.o
 *.out
 *.swp
-sdev_ctl
+*.service
+sdevctl
 sdevd

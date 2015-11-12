@@ -1,5 +1,5 @@
-CXX=clang++ -std=c++11 -Wall
-ctrl = sdev_ctl
+CXX=g++ -std=c++11 -Wall
+ctrl = sdevctl
 daemon = sdevd
 
 all: $(ctrl) $(daemon)
@@ -14,15 +14,15 @@ $(daemon): sudodev.o sdevd.o
 	strip $@
 
 install:
-	@sudo install sdev_ctl /bin
-	@sudo install sdevd /bin
+	@sudo install $(ctrl) /bin
+	@sudo install $(daemon) /bin
 	@echo "Install finished!"
 
 uninstall:
-	@sudo rm -f /bin/sdev_ctl /bin/sdevd
+	@sudo rm -f /bin/$(ctrl) /bin/$(daemon)
 	@sudo rm -f /etc/sdev.conf
 	@sudo rm -f /etc/sudoers.d/sdev
 	@echo "Uninstall finished!"
 
 clean:
-	rm *.o sdev_ctl sdevd
+	rm *.o $(ctrl) $(daemon)

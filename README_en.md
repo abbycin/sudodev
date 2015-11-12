@@ -21,9 +21,13 @@ if it's NOT exits, program will try to append it to your `/etc/sudoers`, but thi
 If above conditions are all satisfied, you can run `sdev_ctl` with `add` or `del` option to add or delete your device. Once `sdevd` detected the device, you will find `sudo` doesn't need password anymore.
 
 # Suggestions
-- Before running, please backup all **affect files**
+- Before running, please backup all **affected files**
 - You may want to  write a *[init](https://en.wikipedia.org/wiki/Init)* script, please read the wiki of your Linux distribution or take a look over [here](https://github.com/Arondight/sudodev/tree/master/init)
-- If `sdevd` exits unexpectedly, please remove `/var/run/sdevd.pid` manually
 
 # Thanks
 [@Arondight](https://github.com/Arondight) Thanks for creating such a great project
+
+# COPYRIGHT
+Copyright © 2015 AbbyCin(abbytsing@gmail.com)   
+# LISCENSE 
+GNU General Public License [GPL](./LICENSE)

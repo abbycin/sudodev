@@ -12,14 +12,25 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <map>
 
 using std::cerr;
 using std::endl;
 
-extern std::ofstream logs;
-extern bool exit_flag;
-extern std::string qualified_dev;
+static std::ofstream logs;
+static bool exit_flag;
+
+void hup_handler(int sig)
+{
+        logs << "Cought signal " << sig << " restart..." << endl;
+}
+
+void term_handler(int sig)
+{
+        logs << "Cought signal " << sig << " exit..." << endl;
+        exit_flag = true;
+}
 
 static void device_helper()
 {
@@ -33,6 +44,12 @@ static void device_helper()
 
 int main()
 {
+        if(getuid())
+        {
+                cerr << "Please run as root! exit..." << endl;
+                exit(1);
+        }
+
         if(to_daemon() == -1)
         {
                 cerr << "Can't turn into daemon, exit..." << endl;
@@ -47,23 +64,7 @@ int main()
         }
 
         logs << std::unitbuf;
-
-        if(getuid())
-        {
-                logs << "Please run as root! exit..." << endl;
-                logs.close();
-                exit(1);
-        }
-
-        if(access(PID_PATH, F_OK) == 0)
-        {
-                logs << "A daemon is running or that daemon exit "
-                        << "unexpectly, please manaully remove this"
-                        << " lock file: " << PID_PATH << "\nexit..."
-                        << endl;
-                logs.close();
-                exit(1);
-        }
+        logs << "++++++++  program started! ++++++++" << endl;
 
         if(add_group() == -1)
         {
@@ -81,6 +82,7 @@ int main()
         }
 
         std::string msg;
+
         if(record_pid(msg) == -1)
         {
                 logs << msg << endl;
@@ -96,12 +98,14 @@ int main()
                 logs.close();
                 exit(1);
         }
-
+        
+        std::string qualified_dev;
+        
         while(!exit_flag)
         {
                 if(log_truncate() == -1)
                         break;
-                while(!is_qualified_device() && !exit_flag)
+                while(!is_qualified_device(qualified_dev) && !exit_flag)
                         device_helper();
 
                 if(!exit_flag)
@@ -110,7 +114,7 @@ int main()
                         logs << qualified_dev << " granted privilege!\n";
                 }
 
-                while(is_qualified_device() && !exit_flag)
+                while(is_qualified_device(qualified_dev) && !exit_flag)
                         device_helper();
 
                 privilege(false);
@@ -118,7 +122,11 @@ int main()
                 logs << "Dropped privilege!\n";
         }
 
+        time_t tm = time(NULL);
+        logs << "Program exited: " << ctime(&tm) << endl;
         logs.close();
+
         unlink(PID_PATH);
+
         return 0;
 }

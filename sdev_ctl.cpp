@@ -14,8 +14,6 @@
 #include <map>
 #include <string>
 
-extern bool plugin_devs_ok;
-extern bool exit_flag;
 extern std::map<int, std::string> plugin_dev;
 extern std::map<int, std::string> plugin_dev_uuid;
 
@@ -116,6 +114,7 @@ int main(int argc, char *argv[])
         cout << "Scaning available devices..." << endl;
 
         int countdown = 2;
+        bool plugin_devs_ok = false;
         while(!plugin_devs_ok && countdown)
         {
                 if(get_plugin_dev() == -1)

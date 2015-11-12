@@ -1,7 +1,7 @@
 # 描述
 [English](./README_en.md)
 
-**sudodev** 是一个设备(特指U盘)让你使用`sudo`而不需要密码的程序   
+**sudodev** 是一个通过指定某个设备(U盘)后让你使用`sudo`而不需要密码的程序   
 
 看到[这里](https://github.com/Arondight/sudodev)后,用C++写了一遍
 初学C++算是练习吧
@@ -24,7 +24,11 @@
 # 建议
 - 使用前请备份**影响的系统文件**
 - 你可以将`sdevd`写入系统的启动脚本，具体方法参见你所用发行版的wiki,也可以参考[这里](https://github.com/Arondight/sudodev/tree/master/init)
-- 如果`sdevd`意外结束导致程序不能工作，请删除`/var/run/sdevd.pid`
 
 # 致谢
-非常感谢学姐[@Arondight](https://github.com/Arondight)做了这个很棒的东西
+非常感谢学姐[@Arondight](https://github.com/Arondight)做了这个很棒的东西   
+
+# COPYRIGHT
+Copyright © 2015 AbbyCin(abbytsing@gmail.com)   
+# LISCENSE 
+GNU General Public License [GPL](./LICENSE)
