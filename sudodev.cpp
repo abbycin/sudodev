@@ -17,7 +17,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
-#include <sys/file.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
@@ -26,16 +25,10 @@
 #include <stdio.h>
 #include <signal.h>
 
-
 using std::endl;
 using std::cerr;
 
 #define LIMITED_PATH_LEN	256
-
-/*
- * global variable for writing logs
- */
-std::ofstream logs;
 
 /*
  * global varibales for program config
@@ -50,22 +43,6 @@ std::vector<std::string> local_dev;
 std::vector<std::pair<std::string, std::string>> all_dev;  // <partition, uuid>
 std::map<int, std::string> plugin_dev;
 std::map<int, std::string> plugin_dev_uuid;
-
-/*
- * global variables for status changing
- */
-bool working = false;
-bool plugin_devs_ok = false;
-
-/*
- * global value for signal handing
- */
-bool exit_flag = false;
-
-/*
- * uuid in /etc/sdev.conf
- */
-std::string qualified_dev;
 
 /*
  * no matter fstab is pure `/dev/xx` format or pure `UUID=xx`
@@ -339,7 +316,7 @@ int drop_in()
  *
  * @ call from daemon
  */
-bool is_qualified_device()
+bool is_qualified_device(std::string &qualified_dev)
 {
         get_plugin_dev();
 
@@ -393,22 +370,9 @@ int install_handler(int sig, void (*handler)(int))
         return sigaction(sig, &sa, NULL);
 }
 
-void hup_handler(int sig)
-{
-        // ignore sighup
-        logs << "Cought signal " << sig << " restart..." << endl;
-}
-
-void term_handler(int sig)
-{
-        logs << "Cought signal " << sig << " exit..." << endl;
-        exit_flag = true;
-}
-
 /*
  * manipulate privilege
  */
-
 int privilege(bool is_grant)
 {
         // no matter file exsit or not, remvoe it
@@ -466,7 +430,6 @@ int record_pid(std::string &msg)
         if(fcntl(fd, F_SETLK, &flk) == -1)
         {
                 msg = "A daemon is running, eixt...";
-                close(fd);
                 return -1;
         }
        
@@ -482,8 +445,6 @@ int record_pid(std::string &msg)
                 msg = std::string(strerror(errno));
                 return -1;
         }
-
-        close(fd);
 
         return 0;
 }
